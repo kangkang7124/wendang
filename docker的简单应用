@@ -1,0 +1,256 @@
+Docker的简单操作
+
+一、	安装：
+
+  Centos:
+
+	1.安装依赖：
+	    yum install -y yum-utils device-mapper-persistent-data lvm2
+	2.添加安装源:
+		yum-config-manager \
+		--add-repo https://mirrors.ustc.edu.cn/docker-ce/linux/centos/docker-ce.repo
+	3.安装最新版的docker-ce
+		yum-config-manager --enable docker-ce-edge
+	4.更新 yum 软件源缓存，并安装 docker-ce
+		yum makecache fast
+		yum install docker-ce
+	5.启动docker
+		service docker start  //开启docker服务
+	    service docker restart   //重启docker服务
+	    service docker stop   //停止docker服务
+	6.镜像加速
+	   由于国内Docker Hub 拉取镜像有时会遇到困难，此时我们需要配置镜像加速器。
+	 在 /etc/docker/daemon.json 文件中写入如下内容如不存在则创建一个
+	 
+		{
+		"registry-mirrors": [
+		"https://registry.docker-cn.com"
+		]
+		}
+
+       注意：配置完成之后输入命令：service docker restart 重启docker
+
+
+  Ubuntu:
+
+
+
+    1. 由于 apt 源使用 HTTPS 以确保软件下载过程中不被篡改。因此，我们首先需要添  	加使用HTTPS 传输的软件包以及 CA 证书。
+	   故先执行以下命:
+	   sudo apt-get update
+	   sudo apt-get install apt-transport-https ca-certificates curl software-properties-common
+	2. 我们需要向 source.list 中添加 Docker 软件源
+   	   命令如下:
+	   sudo add-apt-repository "deb [arch=amd64] https://mirrors.ustc.edu.cn/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
+	3. 安装 Docker CE
+       更新 apt 软件包缓存，并安装 docker-ce：
+	   sudo apt-get update
+	   sudo apt-get install docker-ce
+	4. 启动docker
+	   sudo service docker start  //开启docker服务
+	   sudo service docker restart   //重启docker服务
+	   sudo service docker stop   //停止docker服务
+	6. 镜像加速和Contos 一样
+二、获取镜像
+	1.从 Docker 镜像仓库获取镜像的命令是 docker pull 。其命令格式为：
+
+	   		docker pull [选项] [Docker Registry 地址[:端口号]/]仓库名[:标签] 
+
+	   详细的选项可以通过 docker pull --help 命令看到。
+	   例如：
+
+	      docker pull apache/nifi
+
+	   此条命令直接是在我Docker hub中拉取最后一个镜像版本和 docker pull apache/nifi:latest 是一样的，如需指定版本则可把 latest 改为相应的版本即可
+		 	如： docker pull apache/nifi:1.7.0
+	     	注：拉取的镜像的详细使用方法可在Docker hub（https://hub.docker.com）中查找
+	2.列出镜像:
+
+	    docker images 或者 docker image ls
+
+	3.删除本地镜像:
+
+	   	docker rmi [选项] <镜像1> [<镜像2> ...]
+	 	或者 docker image rm [选项] <镜像1> [<镜像2> ...]
+
+三、运行停止
+
+	1.有了镜像后，我们就以这个镜像为基础启动并运行一个容器。以上面的 apache/nifi:1.7.0 为例，如果我们打算启动里面的 bash 并且进行交互式操作的话，可以执行下面的命令：
+
+       	docker run -it --rm apache/nifi:1.7.0 bash
+
+		docker run 就是运行容器的命令。
+
+   	注：基本参数说明：
+   		（1. --name :可指定容器名称。
+
+   		（2. -d : 容器后台运行。
+
+        （3. -p/P : 进行端口映射:
+	   			-p(小写) :可以指定要映射的IP和端口
+	   			-P(大写)：Docker 会随机映射一个 49000~49900 的端口到内部容器开放的网络端口
+
+   		（4. -it ：这是两个参数，一个是 -i交互式操作，一个是 -t 终端。我们这里打算进入。
+
+		（5. bash ：执行一些命令并查看返回结果，因此我们需要交互式终端。
+
+		（6. --rm ：这个参数是说容器退出后随之将其删除。默认情况下，为了排障需求，退出的容器并不会立即删除，除非手动docker rm 。             
+		           我们这里只是随便执行个命令，看看结果，不需要排障和保留结果，因此使用 --rm 可以避免浪费空间。
+
+		（7. apache/nifi:1.7.0 ：这是指用 apache/nifi:1.7.0 镜像为基础来启动容器。
+
+		（8. bash ：放在镜像名后的是命令，这里我们希望有个交互式 Shell，因此用的是 bash 。
+
+
+	注：如进入容器之后想回到宿主机的交互界面我们可以用 CTRL + P + Q 退出容器而不关闭它。
+
+	2.进入容器
+	   当我们运行容器后并没有进入其交互界面，而后想进入容器怎么办？很简单在宿主机上运行 
+
+		    docker attach [id]/[name] 
+
+	   这个命令有个需要注意的是：如果进入容器在容器内部输入 exit 会导致容器一起被关闭，那这时我们可以用docker exec 来进入容器
+	   如：
+			docker exec -it [id]/[name] bash
+
+	   docker exec 后边可以跟多个参数具体的参数说明请使用 docker exec --help 来查看。
+
+	3.停止容器
+
+		docker stop [name]/[id] //等待结束再关闭
+
+		docker kill [name]/[id] //直接关闭 
+
+	4.删除容器 
+
+	  docker rm [id]/[name]
+
+	5.查看运行的容器 
+
+	  docker ps
+
+    6.启动容器
+
+      docker [container] start
+
+四、构建镜像
+    使用docker commit进行构建，定制用Dockerfile
+
+    docker commit 的语法格式为：
+   		docker commit [选项] <容器ID或容器名> [<仓库名>[:<标签>]]
+
+    如：
+    	docker commit --author "jiang <yuchumian@163.com>" --message "修改了配置文件" mynifi nifi:v1
+    说明：
+    	--author 是指定修改的作者，而 --message 则是记录本次修改的内容。
+
+    之后我们就可以通过docker image ls 看到这个新构建的镜像。
+
+五、使用 Dockerfile 定制镜像
+		Dockerfile 是一个文本文件，其内包含了一条条的指令，每一条指令构建一层，
+	因此每一条指令的内容，就是描述该层应当如何构建。如下：
+
+		FROM apache/nifi:1.7.0
+	    COPY ./nifi.conf /nifi/conf/ 
+
+		定制时我们首先应该创建一个空的文件夹，在其中再创建Dockerfile文件，再写入	如上内容。
+	保存并退出运行
+
+		docker build -t nifi:v3
+	这是一个简单的例子 其中 FROM 指定基础镜像，就是以一个镜像为基础，在其上进	行定制。
+
+		上面的COPY指令是把当前目录下的nifi.conf 复制到镜像的/nifi/conf/下并且COPY指令会保留文件的属性及相应的权限。除此之外ADD,ADD指令作与
+		COPY指令类似，与其不同的是ADD如果遇到的是压缩文件时它会自动进行解压操作。
+	故通常我们在复制文件的时候大多推荐用COPY。 
+
+		使用 Dockerfile 定制镜像我这里只是进行一个简单的介绍，Dockerfile 功能非常强	大。感兴趣的可以去研究。
+六、文件操作
+	1. 容器和宿主机之间的文件操作
+	从宿主机到容器： docker cp <src> [container]:<src>
+	从容器到宿主机： 
+		docker cp [container]:<容器里的文件路径> <将要存放在的宿主机中的路径>
+	2. 挂载
+	使用 --mount 标记可以指定挂载一个本地主机的目录到容器中去。
+
+	例如：
+
+		docker run -d -P --name mynifi \
+		# -v /local/nifi:/opt/nifi \
+	    --mount type=bind,source=/local/nifi,target=/opt/nifi \
+	    apache/nifi:1.7.0
+
+    如上：我们可以使用-v或--mount进行挂载操作
+    有一点是：使用--mount 参数时如果本地目录不存在，Docker 会报错，而-v则会去创建	这个目录
+
+
+七、Docker-compose
+		Docker-Compose 是一个用户定义和运行多个容器的 Docker 应用程序。在 Docker-compose 中你可以使用YAML文件来配置你的应用服务。然后，只需要一个简单的命令，就可以创建并启动你配置的所有服务。
+
+		YAML配置文件（docker-compose.yml）配置如下：
+
+		version: "3"
+			services:
+				nifi:
+				    build: ./
+				    ports:
+				      - "8080:8080"
+				    environment:
+				      - NIFI_ZK_CONNECT_STRING=zookeeper:2181
+				    volumes:
+				      - /opt/nifi/data_in:/opt/nifi/nifi-1.7.0/data_in
+				      - /opt/nifi/data_out:/opt/nifi/nifi-1.7.0/data_out
+
+	    以上是单个nifi的简单配置，以下进行一个简单的说明：
+
+	    build: ./   是以当前目录下 Dockerfile 文件来构建生成镜像。如不需要对镜像进行改动则可以直接用 image 如：
+
+                 nifi:
+				    image: apache/nifi：1.7.0
+				    ports:
+				      - "8080:8080"
+				    environment:
+				      - NIFI_ZK_CONNECT_STRING=zookeeper:2181
+				    volumes:
+				      - /opt/nifi/data_in:/opt/nifi/nifi-1.7.0/data_in
+				      - /opt/nifi/data_out:/opt/nifi/nifi-1.7.0/data_out
+
+	    	注：如果 image: apache/nifi：1.7.0 这个镜像本地没有，dockers-compose会直接从docker hub 上尝试拉取。
+
+		ports:
+			- "8080:8080" 
+			如果以上是 - "8080" 那么这意味着这仅仅是指定容器的端口（宿主将会随机选择端口），而- "8080:8080" 指定映射到宿主机的8080端口
+      
+		environment:
+        	设置环境变量。你可以使用数组或字典两种格式
+
+
+        volumes:
+			- /opt/nifi/data_in:/opt/nifi/nifi-1.7.0/data_in
+			- /opt/nifi/data_out:/opt/nifi/nifi-1.7.0/data_out
+
+			挂载宿主机文件到容器。 /opt/nifi/data_in 为宿主机内的路径，/opt/nifi/nifi-1.7.0/data_in 为容器内的路径
+
+	每个服务都必须通过 image 指令指定镜像或 build 指令（需要 Dockerfile）等来自动构建生成镜像。
+
+
+	启动命令:
+	      在 docker-compose.yml 的目录下直接执行 
+
+	      docker-compose up
+	      如需后台启动则 docker-compose up -d
+	      如要重新构建则 docker-compose up --build -d
+	
+	关闭：docker-compose stop
+	关闭并移除所有配置信息 ： docker-compose down 
+
+
+	注：docker-compose的配置我这只是写了一小部分，其他的可在网上了解
+
+
+注：
+1．在运行elasticsearch 时出现 max virtual memory areas vm.max_map_count [65530] 时 ，
+请在宿主机中执行：sysctl -w vm.max_map_count=262144
+
+
+
+ 
